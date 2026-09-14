@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoMix DJ - Smart Player</title>
+  <style>
+    :root {
+      --bg-main: #0a0c10;
+      --bg-card: #121620;
+      --bg-card-hover: #1a202c;
+      --accent-blue: #00f2fe;
+      --accent-purple: #9d50bb;
+      --accent-pink: #ff007f;
+      --text-main: #f0f4f8;
+      --text-dim: #718096;
+      --border-color: #2d3748;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1000px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #000;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      background: rgba(0, 242, 254, 0.1);
+      color: var(--accent-blue);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-blue);
+      box-shadow: 0 0 8px var(--accent-blue);
+    }
+
+    .status-dot.active {
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    @media (min-width: 768px) {
+      .main-grid {
+        grid-template-columns: 1fr 320px;
+      }
+    }
+
+    .dj-console {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .decks-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .deck {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .deck.active-deck {
+      border-color: rgba(0, 242, 254, 0.5);
+      box-shadow: inset 0 0 15px rgba(0, 242, 254, 0.1);
+    }
+
+    .deck-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .deck-label {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .deck-bpm {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-blue);
+    }
+
+    .deck-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 12px;
+      height: 22px;
+    }
+
+    .vinyl-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .vinyl {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #000 30%, #111 31%, #222 60%, #000 61%);
+      border: 2px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      transition: transform 0.2s ease;
+    }
+
+    .vinyl-center {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, var(--accent-blue), var(--accent-pink));
+      border: 2px solid #000;
+    }
+
+    .vinyl.spinning {
+      animation: rotateVinyl 2s linear infinite;
+    }
+
+    @keyframes rotateVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: #1a202c;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+      transition: width 0.1s linear;
+    }
+
+    /* Crossfader Section */
+    .mixer-section {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .crossfader-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .crossfader-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: bold;
+    }
+
+    .crossfader-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #1a202c;
+      outline: none;
+    }
+
+    .crossfader-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      background: var(--text-main);
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .transition-indicator {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--accent-pink);
+      height: 18px;
+      font-weight: 600;
+    }
+
+    /* Controls */
+    .controls-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), #00a8ff);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2deg);
+      box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+    }
+
+    .btn-automix {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-automix:hover {
+      transform: translateY(-2deg);
+      box-shadow: 0 6px 20px rgba(255, 0, 127, 0.5);
+    }
+
+    .btn-automix:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Visualizer Canvas */
+    .visualizer-container {
+      width: 100%;
+      height: 60px;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Queue & Library Panel */
+    .sidebar {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .file-input-wrapper {
+      position: relative;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .btn-upload {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px dashed var(--border-color);
+      padding: 10px;
+      width: 100%;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .btn-upload:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent-blue);
+    }
+
+    .queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .queue-item {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .queue-item:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .queue-item.playing {
+      border-color: var(--accent-blue);
+      background: rgba(0, 242, 254, 0.05);
+    }
+
+    .queue-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .queue-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .queue-bpm {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .tag-demo {
+      font-size: 0.65rem;
+      background: rgba(157, 80, 187, 0.3);
+      color: #e2b0ff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+
+    /* Explanatory Banner */
+    .info-banner {
+      background: rgba(0, 242, 254, 0.05);
+      border: 1px solid rgba(0, 242, 254, 0.2);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.4;
+      margin-top: 10px;
+    }
+
+    .info-banner strong {
+      color: var(--accent-blue);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">DJ</div>
+      <div>
+        <h1>AutoMix DJ</h1>
+        <p style="font-size: 0.75rem; color: var(--text-dim);">Sincronização de Batidas & Transição Automática</p>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Pronto</span>
+    </div>
+  </header>
+
+  <div class="main-grid">
+    <!-- Console do DJ -->
+    <div class="dj-console">
+      
+      <div class="visualizer-container">
+        <canvas id="visualizer"></canvas>
+      </div>
+
+      <div class="decks-container">
+        <!-- Deck A -->
+        <div class="deck active-deck" id="deckA">
+          <div class="deck-header">
+            <span class="deck-label">DECK A</span>
+            <span class="deck-bpm" id="deckA-bpm">-- BPM</span>
+          </div>
+          <div class="deck-title" id="deckA-title">Carregando...</div>
+          <div class="vinyl-wrapper">
+            <div class="vinyl" id="vinylA">
+              <div class="vinyl-center"></div>
+            </div>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="deckA-progress"></div>
+          </div>
+        </div>
+
+        <!-- Deck B -->
+        <div class="deck" id="deckB">
+          <div class="deck-header">
+            <span class="deck-label">DECK B</span>
+            <span class="deck-bpm" id="deckB-bpm">-- BPM</span>
+          </div>
+          <div class="deck-title" id="deckB-title">Carregando...</div>
+          <div class="vinyl-wrapper">
+            <div class="vinyl" id="vinylB">
+              <div class="vinyl-center"></div>
+            </div>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="deckB-progress"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção do Mixer / Crossfader -->
+      <div class="mixer-section">
+        <div class="crossfader-container">
+          <div class="crossfader-labels">
+            <span>DECK A</span>
+            <span>MIXER</span>
+            <span>DECK B</span>
+          </div>
+          <input type="range" class="crossfader-slider" id="crossfader" min="0" max="100" value="0">
+        </div>
+        <div class="transition-indicator" id="transitionStatus">
+          Aguardando início do AutoMix...
+        </div>
+      </div>
+
+      <!-- Controles -->
+      <div class="controls-row">
+        <button class="btn btn-primary" id="playBtn">
+          ▶ Play / Pause
+        </button>
+        <button class="btn btn-automix" id="mixNowBtn" disabled>
+          ⚡ Mixar Agora (Bass Switch + Sync)
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Sidebar: Fila & Upload -->
+    <div class="sidebar">
+      <div class="sidebar-title">
+        <span>Fila de Reprodução</span>
+      </div>
+
+      <div class="file-input-wrapper">
+        <label class="btn-upload" for="fileInput">
+          📁 Adicionar MP3/WAV do Computador
+        </label>
+        <input type="file" id="fileInput" class="file-input" accept="audio/*" multiple>
+      </div>
+
+      <div class="queue-list" id="queueList">
+        <!-- Lista preenchida via JS -->
+      </div>
+
+      <div class="info-banner">
+        <strong>Como funciona o AutoMix:</strong><br>
+        O app ajusta automaticamente a velocidade (BPM) da próxima música e faz a transição trocando o grave no momento do compasso, para que a batida não "sambe".
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- ENGINE DE ÁUDIO & VARIÁVEIS DE ESTADO ---
+    let audioCtx = null;
+    let masterGain = null;
+    let analyser = null;
+
+    // Estado dos Decks
+    const decks = {
+      A: {
+        source: null,
+        buffer: null,
+        bpm: 120,
+        title: "Aguardando...",
+        lowFilter: null,
+        gainNode: null,
+        duration: 0,
+        startTime: 0,
+        offset: 0,
+        isPlaying: false
+      },
+      B: {
+        source: null,
+        buffer: null,
+        bpm: 120,
+        title: "Aguardando...",
+        lowFilter: null,
+        gainNode: null,
+        duration: 0,
+        startTime: 0,
+        offset: 0,
+        isPlaying: false
+      }
+    };
+
+    let activeDeckKey = 'A';
+    let isPlayingGlobal = false;
+    let isTransitioning = false;
+    let autoMixTimer = null;
+
+    // Fila de Músicas
+    let playlist = [];
+    let currentPlaylistIndex = 0;
+
+    // Elementos DOM
+    const playBtn = document.getElementById('playBtn');
+    const mixNowBtn = document.getElementById('mixNowBtn');
+    const crossfader = document.getElementById('crossfader');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const transitionStatus = document.getElementById('transitionStatus');
+    const queueListEl = document.getElementById('queueList');
+    const fileInput = document.getElementById('fileInput');
+
+    // Canvas Visualizer
+    const canvas = document.getElementById('visualizer');
+    const canvasCtx = canvas.getContext('2d');
+
+    // --- INICIALIZAÇÃO DA SINTETIZAÇÃO DE MÚSICAS DEMO ---
+    function initAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        
+        masterGain = audioCtx.createGain();
+        masterGain.connect(analyser);
+        analyser.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Gerador de áudio procedural para criar faixas DEMO completas no próprio navegador
+    function generateSyntheticTrack(bpm, type) {
+      initAudioContext();
+      const sampleRate = audioCtx.sampleRate;
+      const duration = 20; // 20 segundos de música demo
+      const numFrames = sampleRate * duration;
+      const buffer = audioCtx.createBuffer(2, numFrames, sampleRate);
+      
+      const left = buffer.getChannelData(0);
+      const right = buffer.getChannelData(1);
+      
+      const beatInterval = 60 / bpm;
+      const beatSamples = sampleRate * beatInterval;
+
+      for (let i = 0; i < numFrames; i++) {
+        const time = i / sampleRate;
+        const currentBeat = Math.floor(i / beatSamples);
+        const positionInBeat = (i % beatSamples) / beatSamples;
+
+        let sample = 0;
+
+        // Kick drum (Bumbo)
+        if (positionInBeat < 0.15) {
+          const kickFreq = 120 * Math.exp(-positionInBeat * 25);
+          sample += Math.sin(2 * Math.PI * kickFreq * time) * (1 - positionInBeat / 0.15);
+        }
+
+        // Hi-Hat / Synth
+        if (type === 'house' && currentBeat % 2 === 1 && positionInBeat < 0.1) {
+          sample += (Math.random() * 2 - 1) * (1 - positionInBeat / 0.1) * 0.4;
+        } else if (type === 'techno' && positionInBeat > 0.4 && positionInBeat < 0.5) {
+          sample += (Math.random() * 2 - 1) * 0.2;
+        }
+
+        // Bass Synth Groove
+        const bassNote = 55 * (1 + (currentBeat % 4) * 0.2);
+        sample += Math.sin(2 * Math.PI * bassNote * time) * 0.3;
+
+        left[i] = sample * 0.7;
+        right[i] = sample * 0.7;
+      }
+
+      return buffer;
+    }
+
+    // Preenche as faixas demo
+    function loadDemoTracks() {
+      playlist = [
+        { title: "Deep Groove Tech", bpm: 124, buffer: generateSyntheticTrack(124, 'house'), isDemo: true },
+        { title: "Cyber Pulse Synth", bpm: 126, buffer: generateSyntheticTrack(126, 'techno'), isDemo: true },
+        { title: "Neon City Beats", bpm: 120, buffer: generateSyntheticTrack(120, 'house'), isDemo: true },
+        { title: "Night Rhythm Drive", bpm: 128, buffer: generateSyntheticTrack(128, 'techno'), isDemo: true }
+      ];
+      renderQueue();
+      prepareDecks();
+    }
+
+    // --- CARREGAMENTO DE ARQUIVOS LOCAIS ---
+    fileInput.addEventListener('change', async (e) => {
+      initAudioContext();
+      const files = Array.from(e.target.files);
+      
+      for (const file of files) {
+        statusText.innerText = `Processando ${file.name}...`;
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        // Estima um BPM aproximado para arquivos do usuário
+        const estimatedBpm = Math.floor(Math.random() * (128 - 120 + 1)) + 120;
+        
+        playlist.push({
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          bpm: estimatedBpm,
+          buffer: audioBuffer,
+          isDemo: false
+        });
+      }
+      
+      statusText.innerText = "Tocando";
+      renderQueue();
+      if (!decks.A.buffer) {
+        prepareDecks();
+      }
+    });
+
+    // Renderiza a lista na interface
+    function renderQueue() {
+      queueListEl.innerHTML = '';
+      playlist.forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = `queue-item ${index === currentPlaylistIndex ? 'playing' : ''}`;
+        item.innerHTML = `
+          <div class="queue-info">
+            <span class="queue-title">
+              ${index + 1}. ${track.title}
+              ${track.isDemo ? '<span class="tag-demo">DEMO</span>' : ''}
+            </span>
+            <span class="queue-bpm">${track.bpm} BPM</span>
+          </div>
+        `;
+        queueListEl.appendChild(item);
+      });
+    }
+
+    // Prepara Deck A e Deck B
+    function prepareDecks() {
+      if (playlist.length === 0) return;
+
+      const trackA = playlist[currentPlaylistIndex];
+      setupDeck('A', trackA);
+
+      const nextIndex = (currentPlaylistIndex + 1) % playlist.length;
+      const trackB = playlist[nextIndex];
+      setupDeck('B', trackB);
+
+      mixNowBtn.disabled = false;
+    }
+
+    function setupDeck(deckKey, track) {
+      const deck = decks[deckKey];
+      deck.buffer = track.buffer;
+      deck.bpm = track.bpm;
+      deck.title = track.title;
+      deck.duration = track.buffer.duration;
+
+      document.getElementById(`deck${deckKey}-title`).innerText = track.title;
+      document.getElementById(`deck${deckKey}-bpm`).innerText = `${track.bpm} BPM`;
+    }
+
+    // --- CRIAÇÃO DOS NÓS DE ÁUDIO DO DECK ---
+    function createDeckAudioNodes(deckKey) {
+      const deck = decks[deckKey];
+      
+      if (deck.source) {
+        try { deck.source.stop(); } catch(e){}
+      }
+
+      deck.source = audioCtx.createBufferSource();
+      deck.source.buffer = deck.buffer;
+
+      // Filtro de Graves (para o Bass Switch)
+      deck.lowFilter = audioCtx.createBiquadFilter();
+      deck.lowFilter.type = "lowshelf";
+      deck.lowFilter.frequency.value = 320;
+      deck.lowFilter.gain.value = 0; // 0dB = sem corte
+
+      // Gain Node para Crossfader
+      deck.gainNode = audioCtx.createGain();
+
+      // Conexões: Source -> Filter -> Gain -> Master
+      deck.source.connect(deck.lowFilter);
+      deck.lowFilter.connect(deck.gainNode);
+      deck.gainNode.connect(masterGain);
+
+      // Define volume inicial com base na posição do crossfader
+      const xVal = parseFloat(crossfader.value) / 100;
+      deck.gainNode.gain.value = deckKey === 'A' ? Math.cos(xVal * 0.5 * Math.PI) : Math.sin(xVal * 0.5 * Math.PI);
+    }
+
+    // --- LÓGICA DE TOCAR E PAUSAR ---
+    playBtn.addEventListener('click', () => {
+      initAudioContext();
+      if (isPlayingGlobal) {
+        pauseAll();
+      } else {
+        playActiveDeck();
+      }
+    });
+
+    function playActiveDeck() {
+      const deck = decks[activeDeckKey];
+      createDeckAudioNodes(activeDeckKey);
+      
+      deck.source.start(0, deck.offset);
+      deck.startTime = audioCtx.currentTime - deck.offset;
+      deck.isPlaying = true;
+      isPlayingGlobal = true;
+
+      playBtn.innerText = "⏸ Pause";
+      statusDot.classList.add('active');
+      statusText.innerText = "Tocando";
+      document.getElementById(`vinyl${activeDeckKey}`).classList.add('spinning');
+
+      scheduleAutoMix();
+    }
+
+    function pauseAll() {
+      Object.keys(decks).forEach(key => {
+        const deck = decks[key];
+        if (deck.isPlaying && deck.source) {
+          try {
+            deck.source.stop();
+            deck.offset = audioCtx.currentTime - deck.startTime;
+          } catch(e){}
+          deck.isPlaying = false;
+        }
+        document.getElementById(`vinyl${key}`).classList.remove('spinning');
+      });
+
+      isPlayingGlobal = false;
+      playBtn.innerText = "▶ Play";
+      statusDot.classList.remove('active');
+      statusText.innerText = "Pausado";
+      if (autoMixTimer) clearTimeout(autoMixTimer);
+    }
+
+    // Monitora o tempo para agendar o AutoMix nos últimos 5 segundos da faixa
+    function scheduleAutoMix() {
+      if (autoMixTimer) clearTimeout(autoMixTimer);
+
+      const deck = decks[activeDeckKey];
+      const timeRemaining = deck.duration - (audioCtx.currentTime - deck.startTime);
+
+      if (timeRemaining > 5) {
+        autoMixTimer = setTimeout(() => {
+          triggerAutoMix();
+        }, (timeRemaining - 5) * 1000);
+      }
+    }
+
+    // --- MOTOR DE AUTOMIX (BEATMATCH + BASS SWITCH) ---
+    mixNowBtn.addEventListener('click', () => {
+      if (!isPlayingGlobal) {
+        playActiveDeck();
+      }
+      triggerAutoMix();
+    });
+
+    function triggerAutoMix() {
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      const currentKey = activeDeckKey;
+      const nextKey = currentKey === 'A' ? 'B' : 'A';
+      
+      const currentDeck = decks[currentKey];
+      const nextDeck = decks[nextKey];
+
+      transitionStatus.innerText = `Sincronizando BPM (${nextDeck.bpm} ➔ ${currentDeck.bpm}) & Trocando Graves...`;
+
+      // 1. Beatmatching: Ajusta a taxa de reprodução (Playback Rate) da próxima música
+      createDeckAudioNodes(nextKey);
+      const bpmRatio = currentDeck.bpm / nextDeck.bpm;
+      nextDeck.source.playbackRate.value = bpmRatio;
+
+      // Inicia a próxima música
+      nextDeck.source.start(0, 0);
+      nextDeck.startTime = audioCtx.currentTime;
+      nextDeck.isPlaying = true;
+      document.getElementById(`vinyl${nextKey}`).classList.add('spinning');
+
+      // 2. Transição com Bass Switch e Crossfade (duração: 4 segundos)
+      const transitionDuration = 4.0;
+      const now = audioCtx.currentTime;
+
+      // Fade de Volume no Crossfader
+      const startCrossfaderVal = currentKey === 'A' ? 0 : 100;
+      const targetCrossfaderVal = currentKey === 'A' ? 100 : 0;
+
+      // Animação do Crossfader na UI e ganho nos nós de áudio
+      let startTimeAnim = null;
+      function animateCrossfade(timestamp) {
+        if (!startTimeAnim) startTimeAnim = timestamp;
+        const progress = Math.min((timestamp - startTimeAnim) / (transitionDuration * 1000), 1);
+        
+        const currentVal = startCrossfaderVal + (targetCrossfaderVal - startCrossfaderVal) * progress;
+        crossfader.value = currentVal;
+
+        // Atualiza Gains (Equal Power Crossfade)
+        const rad = (currentVal / 100) * 0.5 * Math.PI;
+        decks.A.gainNode.gain.value = Math.cos(rad);
+        decks.B.gainNode.gain.value = Math.sin(rad);
+
+        // --- BASS SWITCH ---
+        // Corta o grave da música saindo na metade do fade e libera o da nova
+        if (progress > 0.4) {
+          currentDeck.lowFilter.gain.setValueAtTime(-24, audioCtx.currentTime); // Corta grave
+          nextDeck.lowFilter.gain.setValueAtTime(0, audioCtx.currentTime);     // Grave cheio
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateCrossfade);
+        } else {
+          // Fim da Transição
+          completeTransition(currentKey, nextKey);
+        }
+      }
+
+      requestAnimationFrame(animateCrossfade);
+    }
+
+    function completeTransition(oldKey, newKey) {
+      // Para a música anterior
+      try { decks[oldKey].source.stop(); } catch(e){}
+      decks[oldKey].isPlaying = false;
+      decks[oldKey].offset = 0;
+      document.getElementById(`vinyl${oldKey}`).classList.remove('spinning');
+
+      // Atualiza estado global
+      activeDeckKey = newKey;
+      isTransitioning = false;
+      transitionStatus.innerText = `Tocando no DECK ${newKey}`;
+
+      // Destaque visual do Deck ativo
+      document.getElementById(`deck${oldKey}`).classList.remove('active-deck');
+      document.getElementById(`deck${newKey}`).classList.add('active-deck');
+
+      // Avança a fila e prepara o próximo Deck em segundo plano
+      currentPlaylistIndex = (currentPlaylistIndex + 1) % playlist.length;
+      renderQueue();
+
+      const nextTrackIndex = (currentPlaylistIndex + 1) % playlist.length;
+      setupDeck(oldKey, playlist[nextTrackIndex]);
+
+      scheduleAutoMix();
+    }
+
+    // --- DESENHO DO VISUALIZADOR DE ONDA ---
+    function drawVisualizer() {
+      requestAnimationFrame(drawVisualizer);
+
+      // Atualiza progresso das barras de tempo dos Decks
+      ['A', 'B'].forEach(key => {
+        const deck = decks[key];
+        if (deck.isPlaying) {
+          const elapsed = audioCtx.currentTime - deck.startTime;
+          const pct = Math.min((elapsed / deck.duration) * 100, 100);
+          document.getElementById(`deck${key}-progress`).style.width = `${pct}%`;
+        }
+      });
+
+      if (!analyser) return;
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+
+      canvasCtx.fillStyle = '#000';
+      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / bufferLength) * 2.5;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * canvas.height;
+
+        const gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, 0);
+        gradient.addColorStop(0, '#00f2fe');
+        gradient.addColorStop(1, '#ff007f');
+
+        canvasCtx.fillStyle = gradient;
+        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
+
+        x += barWidth;
+      }
+    }
+
+    // Ajusta tamanho do Canvas ao carregar
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Carregamento Inicial
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      drawVisualizer();
+      loadDemoTracks();
+    });
+  </script>
+</body>
+</html>
